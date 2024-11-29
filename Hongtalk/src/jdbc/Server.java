@@ -16,6 +16,7 @@ public class Server {
 		Socket socket = null;
 		try {
 			serverSocket = new ServerSocket(8020);
+			serverSocket.setSoTimeout(40000);
 			while (true) {
 				System.out.println("[클라이언트 연결대기중]");
 				socket = serverSocket.accept();

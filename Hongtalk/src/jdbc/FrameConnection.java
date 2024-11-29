@@ -10,8 +10,7 @@ public class FrameConnection extends JFrame {
     String url = "jdbc:mysql://localhost:3306/abcd?serverTimezone=UTC&useSSL=false";
     String ID = "root";
     String PW = "abcd1234";
-
-
+    
 
     public FrameConnection() {
         setTitle("로그인 페이지");
@@ -42,10 +41,12 @@ public class FrameConnection extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 String userId = idField.getText();
                 String userPassword = new String(passField.getPassword());
-                boolean isValidUser = checkUserCredentials(userId, userPassword);
+                User user = checkUserCredentials(userId, userPassword);
 
-                if (isValidUser) {
-                    JOptionPane.showMessageDialog(c, "로그인 성공!", "성공", JOptionPane.INFORMATION_MESSAGE);
+                if (user != null) {
+                	JOptionPane.showMessageDialog(c, "로그인 성공!", "성공", JOptionPane.INFORMATION_MESSAGE);
+                    new MainFrame(user); // 성공 시 mainFrame으로 이동
+                    dispose();
                 } else {
                     JOptionPane.showConfirmDialog(c, "사용자 정보 없음", "로그인 실패",JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE);
                 }
@@ -61,9 +62,11 @@ public class FrameConnection extends JFrame {
         });
         
     }
+    
+
 
     // 데이터베이스에서 사용자 자격 증명을 확인하는 메서드
-    public boolean checkUserCredentials(String userId, String userPassword) {
+    public User checkUserCredentials(String userId, String userPassword) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -72,13 +75,26 @@ public class FrameConnection extends JFrame {
             Class.forName("com.mysql.cj.jdbc.Driver");
             conn = DriverManager.getConnection(url, ID, PW);
 
-            String sql = "SELECT id, password FROM student WHERE id = ? AND password = ?";
+            String sql = "SELECT * FROM student WHERE id = ? AND password = ?";
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, userId);
             pstmt.setString(2, userPassword);
 
             rs = pstmt.executeQuery();
-            return rs.next(); // 결과가 존재하면 true, 없으면 false
+            if (rs.next()) {
+                String name = rs.getString("name");
+                int age = rs.getInt("age");
+                String id = rs.getString("id");
+                String password = rs.getString("password");
+                
+                System.out.println("name: " + name);
+                System.out.println("age: " + age);
+                System.out.println("id: " + id);
+                System.out.println("password: " + password);
+
+                return new User(name, age, id, password); // User 객체 생성
+            }
+
 
         } catch (ClassNotFoundException e) {
             System.out.println("Driver 로딩 실패: " + e.getMessage());
@@ -93,7 +109,7 @@ public class FrameConnection extends JFrame {
                 e.printStackTrace();
             }
         }
-        return false; // 예외 발생 시 false 반환
+        return null; // 예외 발생 시 false 반환
     }
 
     public static void main(String[] args) {

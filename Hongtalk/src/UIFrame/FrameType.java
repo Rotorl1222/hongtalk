@@ -2,6 +2,8 @@ package UIFrame;
 
 public enum FrameType {
 	MAIN,
-    SUB
+    SUB,
+    LOGIN,
+    CHAT
 
 }

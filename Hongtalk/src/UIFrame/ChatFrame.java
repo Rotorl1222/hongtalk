@@ -15,7 +15,7 @@ public class ChatFrame extends JFrame {
 
     private void initialize() {
         setTitle(frameType == FrameType.MAIN ? "Main Chat Frame" : "Sub Chat Frame");
-        setSize(400, 300);
+        setSize(360, 500);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // 현재 프레임만 닫음
         setLayout(new BorderLayout());
 
