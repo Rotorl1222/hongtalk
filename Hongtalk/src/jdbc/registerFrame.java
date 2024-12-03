@@ -129,7 +129,7 @@ public class registerFrame extends JFrame {
 	        conn = DriverManager.getConnection(url, ID, PW);
 
 	        // 사용자 존재 여부 확인
-	        String sql = "SELECT name, age, id, password FROM student WHERE name = ? AND id = ? AND password = ?";
+	        String sql = "SELECT name, age, id, password FROM users WHERE name = ? AND id = ? AND password = ?";
 	        pstmt = conn.prepareStatement(sql);
 	        pstmt.setString(1, name);
 	        pstmt.setString(2, userId);
@@ -140,7 +140,7 @@ public class registerFrame extends JFrame {
 
 	        // 데이터 삽입 로직
 	        if (!register) {
-	            String res = "INSERT INTO student (name, age, id, password) values(?, ?, ?, ?)";
+	            String res = "INSERT INTO users (name, age, id, password) values(?, ?, ?, ?)";
 	            pstmt = conn.prepareStatement(res);
 	            pstmt.setString(1, name);
 	            pstmt.setInt(2, age);

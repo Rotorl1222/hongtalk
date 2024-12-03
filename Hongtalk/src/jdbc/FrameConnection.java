@@ -75,7 +75,7 @@ public class FrameConnection extends JFrame {
             Class.forName("com.mysql.cj.jdbc.Driver");
             conn = DriverManager.getConnection(url, ID, PW);
 
-            String sql = "SELECT * FROM student WHERE id = ? AND password = ?";
+            String sql = "SELECT * FROM users WHERE id = ? AND password = ?";
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, userId);
             pstmt.setString(2, userPassword);

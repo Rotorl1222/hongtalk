@@ -2,8 +2,8 @@ package jdbc;
 
 import javax.swing.*;
 import java.awt.*;
+import java.sql.SQLException;
 import java.util.List;
-import java.util.ArrayList;
 
 public class MainFrame extends JFrame {
     public MainFrame(User user) {
@@ -19,26 +19,79 @@ public class MainFrame extends JFrame {
         userInfoPanel.add(new JLabel("나이: " + user.getAge()));
         c.add(userInfoPanel, BorderLayout.NORTH);
 
-        // 중앙 - 친구 목록
+        // 중앙 - 친구 목록 패널
         JPanel friendPanel = new JPanel();
         friendPanel.setLayout(new BoxLayout(friendPanel, BoxLayout.Y_AXIS));
         friendPanel.setBorder(BorderFactory.createTitledBorder("친구 목록"));
 
-        List<String> friends = getFriendList(user); // 친구 목록 불러오기 (임의 데이터)
-        for (String friend : friends) {
-            friendPanel.add(new JLabel(friend));
+        List<Friends> friends = getFriendList(user); // 친구 목록 데이터베이스에서 가져오기
+        for (Friends friend : friends) {
+            JButton friendButton = new JButton(friend.getName() + " (" + friend.getId() + ")");
+            friendButton.addActionListener(e -> showFriendInfo(friend));
+            friendPanel.add(friendButton);
         }
-        c.add(friendPanel, BorderLayout.WEST);
 
-        // 중앙 - 채팅방 목록
+        // 친구 추가 버튼
+     // 친구 추가 버튼
+        JButton addFriendButton = new JButton("친구 추가");
+        addFriendButton.addActionListener(e -> {
+            String friendId = JOptionPane.showInputDialog(this, "추가할 친구 ID를 입력하세요:");
+            if (friendId != null && !friendId.trim().isEmpty()) {
+                try {
+                    FriendService friendService = new FriendService();
+                    friendService.addFriend(user.getUserId(), friendId);
+                    JOptionPane.showMessageDialog(this, "친구 추가 성공!");
+//                    refreshFriendList(friendPanel, user);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "친구 추가 실패: " + ex.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        c.add(addFriendButton, BorderLayout.WEST);
+//
+//        // 채팅방 추가 버튼
+//        JButton addChatRoomButton = new JButton("채팅방 추가");
+//        addChatRoomButton.addActionListener(e -> {
+//            String roomName = JOptionPane.showInputDialog(this, "생성할 채팅방 이름을 입력하세요:");
+//            if (roomName != null && !roomName.trim().isEmpty()) {
+//                try {
+//                    ChatRoomService chatRoomService = new ChatRoomService();
+//                    chatRoomService.addChatRoom(roomName, user.getId());
+//                    JOptionPane.showMessageDialog(this, "채팅방 생성 성공!");
+//                    refreshChatRoomList(chatPanel, user);
+//                } catch (Exception ex) {
+//                    JOptionPane.showMessageDialog(this, "채팅방 생성 실패: " + ex.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
+//                }
+//            }
+//        });
+//        c.add(addChatRoomButton, BorderLayout.EAST);
+//
+//        friendPanel.add(addFriendButton);
+//        c.add(friendPanel, BorderLayout.WEST);
+
+        // 중앙 - 채팅방 목록 패널
         JPanel chatPanel = new JPanel();
         chatPanel.setLayout(new BoxLayout(chatPanel, BoxLayout.Y_AXIS));
         chatPanel.setBorder(BorderFactory.createTitledBorder("채팅방 목록"));
 
-        List<String> chatRooms = getChatRoomList(user); // 채팅방 목록 불러오기 (임의 데이터)
-        for (String chatRoom : chatRooms) {
-            chatPanel.add(new JLabel(chatRoom));
+        List<ChatRoom> chatRooms = getChatRoomList(user); // 채팅방 목록 데이터베이스에서 가져오기
+        for (ChatRoom chatRoom : chatRooms) {
+            JButton chatButton = new JButton(chatRoom.getRoomName());
+            chatButton.addActionListener(e -> showChatRoomInfo(chatRoom));
+            chatPanel.add(chatButton);
         }
+
+        // 채팅방 생성 버튼
+        JButton createChatButton = new JButton("채팅방 생성");
+        createChatButton.addActionListener(e -> {
+			try {
+				createChatRoom(user);
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		});
+        chatPanel.add(createChatButton);
         c.add(chatPanel, BorderLayout.EAST);
 
         // 하단 로그아웃 버튼
@@ -49,25 +102,86 @@ public class MainFrame extends JFrame {
         });
         c.add(logoutButton, BorderLayout.SOUTH);
 
-        setSize(500, 400);
+        setSize(600, 400);
         setVisible(true);
     }
 
-    // 임의의 친구 목록 데이터 반환
-    private List<String> getFriendList(User user) {
-        List<String> friends = new ArrayList<>();
-        friends.add("친구1");
-        friends.add("친구2");
-        friends.add("친구3");
-        return friends;
+    // 데이터베이스에서 친구 목록 가져오기
+    private List<Friends> getFriendList(User user) {
+        FriendService friendService = new FriendService(); // 데이터베이스 처리 클래스
+        return friendService.getFriends(user.getUserId());
     }
 
-    // 임의의 채팅방 목록 데이터 반환
-    private List<String> getChatRoomList(User user) {
-        List<String> chatRooms = new ArrayList<>();
-        chatRooms.add("채팅방1");
-        chatRooms.add("채팅방2");
-        chatRooms.add("채팅방3");
-        return chatRooms;
+    // 데이터베이스에서 채팅방 목록 가져오기
+    private List<ChatRoom> getChatRoomList(User user) {
+        ChatRoomService chatRoomService = new ChatRoomService(); // 데이터베이스 처리 클래스
+        return chatRoomService.getChatRooms(user.getUserId());
+    }
+
+    // 친구 정보 표시
+    private void showFriendInfo(Friends friend) {
+        JFrame friendInfoFrame = new JFrame(friend.getName() + " 정보");
+        friendInfoFrame.setSize(300, 200);
+        friendInfoFrame.setLayout(new BorderLayout());
+
+        JTextArea infoArea = new JTextArea("ID: " + friend.getId() + "\n" +
+                                           "이름: " + friend.getName() + "\n" +
+                                           "나이: " + friend.getAge());
+        infoArea.setEditable(false);
+        friendInfoFrame.add(infoArea, BorderLayout.CENTER);
+
+        JButton closeButton = new JButton("닫기");
+        closeButton.addActionListener(e -> friendInfoFrame.dispose());
+        friendInfoFrame.add(closeButton, BorderLayout.SOUTH);
+
+        friendInfoFrame.setVisible(true);
+    }
+
+    // 친구 추가 기능
+    private void addFriend(User user) throws SQLException {
+        String friendId = JOptionPane.showInputDialog(this, "추가할 친구의 ID를 입력하세요:", "친구 추가", JOptionPane.QUESTION_MESSAGE);
+        String userId = user.getUserId();
+        if (friendId != null && !friendId.isEmpty()) {
+            FriendService friendService = new FriendService(); // 데이터베이스 처리 클래스
+            boolean success = friendService.addFriend(userId, friendId);
+            if (success) {
+                JOptionPane.showMessageDialog(this, "친구가 성공적으로 추가되었습니다!", "성공", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "친구 추가에 실패했습니다. ID를 확인하세요.", "실패", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    // 채팅방 정보 표시
+    private void showChatRoomInfo(ChatRoom chatRoom) {
+        JFrame chatRoomInfoFrame = new JFrame(chatRoom.getRoomName() + " 정보");
+        chatRoomInfoFrame.setSize(400, 300);
+        chatRoomInfoFrame.setLayout(new BorderLayout());
+
+        JTextArea infoArea = new JTextArea("방 ID: " + chatRoom.getRoomId() + "\n" +
+                                           "방 이름: " + chatRoom.getRoomName() + "\n" +
+                                           "생성자: " + chatRoom.getCreatedBy());
+        infoArea.setEditable(false);
+        chatRoomInfoFrame.add(infoArea, BorderLayout.CENTER);
+
+        JButton closeButton = new JButton("닫기");
+        closeButton.addActionListener(e -> chatRoomInfoFrame.dispose());
+        chatRoomInfoFrame.add(closeButton, BorderLayout.SOUTH);
+
+        chatRoomInfoFrame.setVisible(true);
+    }
+
+    // 채팅방 생성 기능
+    private void createChatRoom(User user) throws SQLException {
+        String roomName = JOptionPane.showInputDialog(this, "생성할 채팅방 이름을 입력하세요:", "채팅방 생성", JOptionPane.QUESTION_MESSAGE);
+        if (roomName != null && !roomName.isEmpty()) {
+            ChatRoomService chatRoomService = new ChatRoomService(); // 데이터베이스 처리 클래스
+            boolean success = chatRoomService.addChatRoom(roomName, user.getUserId());
+            if (success) {
+                JOptionPane.showMessageDialog(this, "채팅방이 성공적으로 생성되었습니다!", "성공", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "채팅방 생성에 실패했습니다.", "실패", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }
