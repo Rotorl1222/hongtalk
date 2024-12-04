@@ -12,6 +12,7 @@ public class MainFrame extends JFrame {
         Container c = getContentPane();
         c.setLayout(new BorderLayout());
 
+
         // 상단 사용자 정보
         JPanel userInfoPanel = new JPanel();
         userInfoPanel.setLayout(new FlowLayout());
@@ -48,28 +49,7 @@ public class MainFrame extends JFrame {
             }
         });
         c.add(addFriendButton, BorderLayout.WEST);
-//
-//        // 채팅방 추가 버튼
-//        JButton addChatRoomButton = new JButton("채팅방 추가");
-//        addChatRoomButton.addActionListener(e -> {
-//            String roomName = JOptionPane.showInputDialog(this, "생성할 채팅방 이름을 입력하세요:");
-//            if (roomName != null && !roomName.trim().isEmpty()) {
-//                try {
-//                    ChatRoomService chatRoomService = new ChatRoomService();
-//                    chatRoomService.addChatRoom(roomName, user.getId());
-//                    JOptionPane.showMessageDialog(this, "채팅방 생성 성공!");
-//                    refreshChatRoomList(chatPanel, user);
-//                } catch (Exception ex) {
-//                    JOptionPane.showMessageDialog(this, "채팅방 생성 실패: " + ex.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
-//                }
-//            }
-//        });
-//        c.add(addChatRoomButton, BorderLayout.EAST);
-//
-//        friendPanel.add(addFriendButton);
-//        c.add(friendPanel, BorderLayout.WEST);
 
-        // 중앙 - 채팅방 목록 패널
         JPanel chatPanel = new JPanel();
         chatPanel.setLayout(new BoxLayout(chatPanel, BoxLayout.Y_AXIS));
         chatPanel.setBorder(BorderFactory.createTitledBorder("채팅방 목록"));
@@ -77,7 +57,7 @@ public class MainFrame extends JFrame {
         List<ChatRoom> chatRooms = getChatRoomList(user); // 채팅방 목록 데이터베이스에서 가져오기
         for (ChatRoom chatRoom : chatRooms) {
             JButton chatButton = new JButton(chatRoom.getRoomName());
-            chatButton.addActionListener(e -> showChatRoomInfo(chatRoom));
+            chatButton.addActionListener(e -> openChatRoom(chatRoom, user));
             chatPanel.add(chatButton);
         }
 
@@ -105,6 +85,20 @@ public class MainFrame extends JFrame {
         setSize(600, 400);
         setVisible(true);
     }
+    
+    private void startServer(int roomId) {
+        Thread serverThread = new Thread(() -> {
+            try {
+                Server server = new Server(roomId); // roomId 전달
+                server.start();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        serverThread.setDaemon(true); // MainFrame 종료 시 서버도 종료
+        serverThread.start();
+    }
+
 
     // 데이터베이스에서 친구 목록 가져오기
     private List<Friends> getFriendList(User user) {
@@ -155,7 +149,7 @@ public class MainFrame extends JFrame {
     // 채팅방 정보 표시
     private void showChatRoomInfo(ChatRoom chatRoom) {
         JFrame chatRoomInfoFrame = new JFrame(chatRoom.getRoomName() + " 정보");
-        chatRoomInfoFrame.setSize(400, 300);
+        chatRoomInfoFrame.setSize(200, 300);
         chatRoomInfoFrame.setLayout(new BorderLayout());
 
         JTextArea infoArea = new JTextArea("방 ID: " + chatRoom.getRoomId() + "\n" +
@@ -163,13 +157,24 @@ public class MainFrame extends JFrame {
                                            "생성자: " + chatRoom.getCreatedBy());
         infoArea.setEditable(false);
         chatRoomInfoFrame.add(infoArea, BorderLayout.CENTER);
-
+        
         JButton closeButton = new JButton("닫기");
         closeButton.addActionListener(e -> chatRoomInfoFrame.dispose());
         chatRoomInfoFrame.add(closeButton, BorderLayout.SOUTH);
 
         chatRoomInfoFrame.setVisible(true);
+        
     }
+    
+ // 채팅방 정보 표시 및 열기
+    private void openChatRoom(ChatRoom chatRoom, User user) {
+        int roomId = chatRoom.getRoomId();
+        startServer(roomId); // 선택된 ChatRoom의 roomId로 서버 시작
+        new ChatFrame(roomId, user.getName());
+    }
+
+
+    
 
     // 채팅방 생성 기능
     private void createChatRoom(User user) throws SQLException {

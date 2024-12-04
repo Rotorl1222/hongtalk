@@ -46,6 +46,17 @@ public class ChatRoomService {
 	    }
 		return true;
 	}
+	
+	public boolean addFriendToChatRoom(int roomId, String friendId) throws SQLException {
+	    String query = "INSERT INTO chat_room_participants (room_id, user_id) VALUES (?, ?)";
+	    try (Connection conn = DriverManager.getConnection(url, ID, PW);
+	         PreparedStatement pstmt = conn.prepareStatement(query)) {
+	        pstmt.setInt(1, roomId);
+	        pstmt.setString(2, friendId);
+	        return pstmt.executeUpdate() > 0;
+	    }
+	}
+
 
 
 
