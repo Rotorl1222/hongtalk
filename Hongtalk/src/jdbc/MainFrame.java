@@ -1,17 +1,24 @@
 package jdbc;
 
 import javax.swing.*;
+
+import UIFrame.Server;
+import java.io.IOException;
 import java.awt.*;
 import java.sql.SQLException;
 import java.util.List;
 
 public class MainFrame extends JFrame {
+	
+	jdbc.Server server;
+	
     public MainFrame(User user) {
         setTitle("메인 프레임");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         Container c = getContentPane();
         c.setLayout(new BorderLayout());
-
+        
+        String userID = user.getUserId();
 
         // 상단 사용자 정보
         JPanel userInfoPanel = new JPanel();
@@ -25,15 +32,18 @@ public class MainFrame extends JFrame {
         friendPanel.setLayout(new BoxLayout(friendPanel, BoxLayout.Y_AXIS));
         friendPanel.setBorder(BorderFactory.createTitledBorder("친구 목록"));
 
-        List<Friends> friends = getFriendList(user); // 친구 목록 데이터베이스에서 가져오기
+        List<Friends> friends = getFriendList(user);
+        System.out.println("Debug: 친구 목록 크기 = " + friends.size()); // 친구 목록의 크기 확인
         for (Friends friend : friends) {
+            System.out.println("Debug: 친구 정보 = " + friend.getId() + ", " + friend.getName());
             JButton friendButton = new JButton(friend.getName() + " (" + friend.getId() + ")");
             friendButton.addActionListener(e -> showFriendInfo(friend));
             friendPanel.add(friendButton);
         }
+        c.add(friendPanel);
+        friendPanel.revalidate(); // 패널 갱신
+        friendPanel.repaint(); 
 
-        // 친구 추가 버튼
-     // 친구 추가 버튼
         JButton addFriendButton = new JButton("친구 추가");
         addFriendButton.addActionListener(e -> {
             String friendId = JOptionPane.showInputDialog(this, "추가할 친구 ID를 입력하세요:");
@@ -86,17 +96,23 @@ public class MainFrame extends JFrame {
         setVisible(true);
     }
     
-    private void startServer(int roomId) {
-        Thread serverThread = new Thread(() -> {
+    private void startServer() {
+        if (server == null) {
             try {
-                Server server = new Server(roomId); // roomId 전달
-                server.start();
+                server = new jdbc.Server();
+                Thread serverThread = new Thread(() -> {
+                    try {
+                        server.start();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+                serverThread.setDaemon(true);
+                serverThread.start();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        });
-        serverThread.setDaemon(true); // MainFrame 종료 시 서버도 종료
-        serverThread.start();
+        }
     }
 
 
@@ -169,7 +185,7 @@ public class MainFrame extends JFrame {
  // 채팅방 정보 표시 및 열기
     private void openChatRoom(ChatRoom chatRoom, User user) {
         int roomId = chatRoom.getRoomId();
-        startServer(roomId); // 선택된 ChatRoom의 roomId로 서버 시작
+        startServer(); // 선택된 ChatRoom의 roomId로 서버 시작
         new ChatFrame(roomId, user.getName());
     }
 

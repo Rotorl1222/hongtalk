@@ -54,6 +54,9 @@ public class ChatRoomService {
 	        pstmt.setInt(1, roomId);
 	        pstmt.setString(2, friendId);
 	        return pstmt.executeUpdate() > 0;
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	        throw e; // 예외 전달
 	    }
 	}
 

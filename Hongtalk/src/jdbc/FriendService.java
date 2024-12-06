@@ -58,6 +58,23 @@ public class FriendService {
 		return true;
 	}
 
+	public boolean inviteFriendsToRoom(int roomId, List<String> friendIds) {
+        String sql = "INSERT INTO chat_rooms (room_id, user_id) VALUES (?, ?)";
+        try (Connection conn = DriverManager.getConnection(url, ID, PW);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            for (String friendId : friendIds) {
+                pstmt.setInt(1, roomId);
+                pstmt.setString(2, friendId);
+                pstmt.addBatch(); // Batch 처리
+            }
+            pstmt.executeBatch(); // 실행
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
 
 }
