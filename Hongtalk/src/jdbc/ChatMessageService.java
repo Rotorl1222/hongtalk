@@ -6,7 +6,7 @@ import java.util.List;
 
 public class ChatMessageService {
 
-    private final String url = "jdbc:mysql://localhost:3306/abcd?serverTimezone=UTC&useSSL=false";
+    private final String url = "jdbc:mysql://localhost:3306/abcd?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true";
     private final String ID = "root";
     private final String PW = "abcd1234";
 

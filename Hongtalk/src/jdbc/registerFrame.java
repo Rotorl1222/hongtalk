@@ -7,7 +7,7 @@ import javax.swing.*;
 
 public class registerFrame extends JFrame {
 	
-	String url = "jdbc:mysql://localhost:3306/abcd?serverTimezone=UTC&useSSL=false";
+	String url = "jdbc:mysql://localhost:3306/abcd?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true";
 	String ID = "root";
 	String PW = "abcd1234";
 	
@@ -73,6 +73,9 @@ public class registerFrame extends JFrame {
 
                 if (isValidUser) {
                     JOptionPane.showMessageDialog(c, "가입 성공!", "성공", JOptionPane.INFORMATION_MESSAGE);
+                    FrameConnection r = new FrameConnection();
+            		r.setVisible(true);
+            		dispose();
                 } else {
                     JOptionPane.showMessageDialog(c, "사용자 정보가 이미 존재합니다.", "가입 실패", JOptionPane.WARNING_MESSAGE);
                 }

@@ -25,6 +25,12 @@ public class MainFrame extends JFrame {
         userInfoPanel.setLayout(new FlowLayout());
         userInfoPanel.add(new JLabel("안녕하세요, " + user.getName() + "님!"));
         userInfoPanel.add(new JLabel("나이: " + user.getAge()));
+        
+        JButton userInfoButton = new JButton("유저 정보");
+        userInfoButton.setPreferredSize(new Dimension(100, 30));  // 버튼 크기 조정
+        userInfoButton.addActionListener(e -> showUserInfo(user)); // 클릭 시 유저 정보 창 열기
+        userInfoPanel.add(userInfoButton);
+
         c.add(userInfoPanel, BorderLayout.NORTH);
 
         // 중앙 - 친구 목록 패널
@@ -142,8 +148,25 @@ public class MainFrame extends JFrame {
 
         JButton closeButton = new JButton("닫기");
         closeButton.addActionListener(e -> friendInfoFrame.dispose());
-        friendInfoFrame.add(closeButton, BorderLayout.SOUTH);
+        
+        
+        JButton deleteButton = new JButton("친구 삭제");
+        deleteButton.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(friendInfoFrame, "정말로 이 친구를 삭제하시겠습니까?");
+            if (confirm == JOptionPane.YES_OPTION) {
+                try {
+                    FriendService friendService = new FriendService();
+                    friendService.removeFriend(friend.getId());  // 친구 삭제 메서드 호출
+                    JOptionPane.showMessageDialog(friendInfoFrame, "친구가 삭제되었습니다.");
+                    friendInfoFrame.dispose();
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(friendInfoFrame, "친구 삭제 실패: " + ex.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
 
+        friendInfoFrame.add(deleteButton, BorderLayout.SOUTH);
+//        friendInfoFrame.add(closeButton, BorderLayout.SOUTH);
         friendInfoFrame.setVisible(true);
     }
 
@@ -161,6 +184,54 @@ public class MainFrame extends JFrame {
             }
         }
     }
+    
+    private void showUserInfo(User user) {
+        JFrame userInfoFrame = new JFrame(user.getName() + " 정보");
+        userInfoFrame.setSize(300, 400);
+        userInfoFrame.setLayout(new BorderLayout());
+
+        // 텍스트 필드로 유저 정보 표시
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new GridLayout(3, 2));
+        
+        JTextField nameField = new JTextField(user.getName());
+        JTextField ageField = new JTextField(String.valueOf(user.getAge()));
+        
+        infoPanel.add(new JLabel("이름:"));
+        infoPanel.add(nameField);
+        infoPanel.add(new JLabel("나이:"));
+        infoPanel.add(ageField);
+        
+        // 수정 버튼
+        JButton saveButton = new JButton("정보 수정");
+        saveButton.addActionListener(e -> {
+            String newName = nameField.getText();
+            String newAge = ageField.getText();
+            
+            if (newName != null && !newName.isEmpty() && newAge != null && !newAge.isEmpty()) {
+                try {
+                    // 데이터베이스 업데이트
+                    UserService userService = new UserService();  // 유저 정보 수정 서비스 클래스
+                    boolean success = userService.updateUserInfo(user.getUserId(), newName, Integer.parseInt(newAge));
+                    if (success) {
+                        JOptionPane.showMessageDialog(userInfoFrame, "정보가 성공적으로 수정되었습니다!");
+                        userInfoFrame.dispose(); // 창 닫기
+                    } else {
+                        JOptionPane.showMessageDialog(userInfoFrame, "정보 수정 실패", "오류", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(userInfoFrame, "정보 수정 중 오류 발생: " + ex.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(userInfoFrame, "빈 값은 허용되지 않습니다.", "경고", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        
+        userInfoFrame.add(infoPanel, BorderLayout.CENTER);
+        userInfoFrame.add(saveButton, BorderLayout.SOUTH);
+        userInfoFrame.setVisible(true);
+    }
+
 
     // 채팅방 정보 표시
     private void showChatRoomInfo(ChatRoom chatRoom) {
@@ -186,7 +257,12 @@ public class MainFrame extends JFrame {
     private void openChatRoom(ChatRoom chatRoom, User user) {
         int roomId = chatRoom.getRoomId();
         startServer(); // 선택된 ChatRoom의 roomId로 서버 시작
-        new ChatFrame(roomId, user.getName());
+        try {
+			new ChatFrame(roomId, user.getName(), user.getUserId(), chatRoom.getRoomName());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 
 

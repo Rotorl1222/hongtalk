@@ -65,7 +65,16 @@ public class Server {
             String message;
             while ((message = in.readLine()) != null) {
                 System.out.println("Message from Room " + roomId + ": " + message);
-                broadcastMessage(roomId, message); // 메시지 브로드캐스트
+                if (message.startsWith("DRAW:")) {
+                    // "DRAW:" 이후의 데이터를 그대로 브로드캐스트
+                    String drawData = message.substring(5).trim();
+                    System.out.println("Broadcasting DRAW data: " + drawData);
+                    broadcastMessage(roomId, "DRAW:" + drawData);
+                }  else {
+                    broadcastMessage(roomId, message); // 일반 채팅 메시지 브로드캐스트
+                }
+            
+
             }
 
         } catch (IOException e) {

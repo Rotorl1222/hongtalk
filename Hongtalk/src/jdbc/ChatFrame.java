@@ -16,14 +16,19 @@ import java.util.List;
 public class ChatFrame extends JFrame {
     private final int roomId;
     private final String userName;
+    private final String userId;
+    private final String roomName;
     private PrintWriter out;
     private Socket socket;
+    JTextArea friendListArea = new JTextArea("참여한 친구:\n");
 
-    public ChatFrame(int roomId, String userName) {
+    public ChatFrame(int roomId, String userName, String userId, String roomName) throws IOException {
         this.roomId = roomId;
         this.userName = userName;
+        this.userId = userId;
+		this.roomName = roomName;
 
-        setTitle("채팅방 - " + roomId);
+        setTitle("채팅방 - " + roomName);
         setSize(500, 400);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -36,6 +41,7 @@ public class ChatFrame extends JFrame {
         chatArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(chatArea);
         container.add(scrollPane, BorderLayout.CENTER);
+       
 
         // 하단 입력 패널
         JPanel inputPanel = new JPanel(new BorderLayout());
@@ -45,6 +51,51 @@ public class ChatFrame extends JFrame {
         inputPanel.add(inputField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
         container.add(inputPanel, BorderLayout.SOUTH);
+        
+     // 오른쪽 패널
+        JPanel rightPanel = new JPanel();
+        rightPanel.setPreferredSize(new Dimension(120, getHeight())); // 가로 120px
+        rightPanel.setLayout(new BorderLayout());
+        container.add(rightPanel, BorderLayout.EAST);
+
+        // "친구 초대" 버튼
+        JButton inviteButton = new JButton("친구 초대");
+        inviteButton.addActionListener(e -> {
+            // FriendInviteFrame을 띄움
+            SwingUtilities.invokeLater(() -> new FriendInviteFrame(userId, roomId, roomName, this));
+            
+        });
+        rightPanel.add(inviteButton, BorderLayout.NORTH);
+
+        // 참여한 친구 목록
+        
+        friendListArea.setEditable(false);
+        JScrollPane friendScrollPane = new JScrollPane(friendListArea);
+        rightPanel.add(friendScrollPane, BorderLayout.CENTER);
+
+        // 하단 부가기능 버튼 패널
+        JPanel utilityPanel = new JPanel();
+        utilityPanel.setLayout(new GridLayout(2, 1, 5, 5)); // 버튼 두 개 배치
+        JButton utilityButton1 = new JButton("그림판");
+        JButton utilityButton2 = new JButton("오늘의 운");
+
+        utilityButton1.addActionListener(e -> {
+            SwingUtilities.invokeLater(() -> {
+                new DrawingBoardFrame(socket, roomId); // ChatFrame의 socket을 전달
+            });
+        });
+        utilityButton2.addActionListener(e -> {
+            SwingUtilities.invokeLater(() -> {
+                new FortuneTellerFrame(this); // ChatFrame을 전달하여 운세 메시지를 전송
+            });
+        });
+
+
+        utilityPanel.add(utilityButton1);
+        utilityPanel.add(utilityButton2);
+
+        rightPanel.add(utilityPanel, BorderLayout.SOUTH);
+
         
         ChatMessageService chatMessageService = new ChatMessageService();
         try {
@@ -81,11 +132,13 @@ public class ChatFrame extends JFrame {
         });
     }
     
-    
+    public void addFriendToList(String friendName) {
+        // 오른쪽 패널의 friendListArea에 친구 추가
+        friendListArea.append(friendName + "\n");
+    }
+
 
     private void connectToServer(JTextArea chatArea) {
-    	
-    	ChatMessageService chatMessageService = new ChatMessageService();
     	
         try {
             socket = new Socket("127.0.0.1", 8020);
@@ -100,6 +153,10 @@ public class ChatFrame extends JFrame {
                 String msg;
                 try {
                     while ((msg = in.readLine()) != null) {
+                    	if (msg.startsWith("DRAW:")) {
+                            // 이 메시지는 그림 데이터로 처리되고, 채팅창에 출력하지 않음
+                            continue;
+                        }
                         System.out.println("Debug: Received raw message from server: " + msg); // 디버깅 로그 추가
 
                         // ':'로 메시지 구분
@@ -107,8 +164,6 @@ public class ChatFrame extends JFrame {
                         if (parts.length == 2) {
                             String senderName = parts[0].trim();
                             String message = parts[1].trim();
-
-                            chatMessageService.saveMessage(roomId, senderName, message);
 
                             // 디버깅 로그
                             System.out.println("Debug: Parsed senderName = " + senderName + ", message = " + message);
@@ -129,10 +184,7 @@ public class ChatFrame extends JFrame {
                 } catch (IOException ex) {
                     chatArea.append("연결이 종료되었습니다.\n");
                     System.out.println("Debug: Exception occurred while reading messages: " + ex.getMessage());
-                } catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+                }
             }).start();
 
         } catch (IOException e) {
@@ -140,14 +192,36 @@ public class ChatFrame extends JFrame {
             System.out.println("Debug: Failed to connect to server: " + e.getMessage());
         }
     }
+    
+    
 
 
 
     private void sendMessage(JTextField inputField, JTextArea chatArea) {
+    	
+    	ChatMessageService chatMessageService = new ChatMessageService();
         String message = inputField.getText().trim();
         if (!message.isEmpty() && out != null) {
-            out.println(userName + ": " + message);
-            inputField.setText("");
+        	try {
+                // 데이터베이스에 메시지 저장
+                if (chatMessageService.saveMessage(roomId, userId, message)) {
+                    out.println(userName + ": " + message);
+                    inputField.setText("");
+                } else {
+                    chatArea.append("메시지를 저장하지 못했습니다.\n");
+                }
+            } catch (SQLException e) {
+                chatArea.append("메시지 저장 중 오류가 발생했습니다.\n");
+                e.printStackTrace();
+            }
         }
     }
+    
+    public void sendFortuneToChat(String fortune) {
+        if (out != null) {
+            // 서버로 운세 메시지 전송
+            out.println(userName + ": " + fortune);
+        }
+    }
+
 }

@@ -7,7 +7,7 @@ import javax.swing.*;
 
 public class FrameConnection extends JFrame {
     // DB login data
-    String url = "jdbc:mysql://localhost:3306/abcd?serverTimezone=UTC&useSSL=false";
+    String url = "jdbc:mysql://localhost:3306/abcd?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true";
     String ID = "root";
     String PW = "abcd1234";
     
